@@ -1,42 +1,42 @@
 let db;
-const request = indexedDB.open("pizza_hunt", 1);
+const request = indexedDB.open("budget_tracker", 1);
 
 request.onupgradeneeded = function (event) {
   const db = event.target.result;
-  db.createObjectStore("new_pizza", { autoIncrement: true });
+  db.createObjectStore("pending_transaction", { autoIncrement: true });
 };
 
 request.onsuccess = function (event) {
   db = event.target.result;
 
   if (navigator.onLine) {
-    uploadPizza();
+    uploadTransaction();
   }
 };
 
 request.onerror = function (event) {
-  console.log(event.target.errorCode);
+  console.log("ERROR ⛔" + event.target.errorCode);
 };
 
 function saveRecord(record) {
-  const transaction = db.transaction(["new_pizza"], "readwrite");
+  const transaction = db.transaction(["pending_transaction"], "readwrite");
 
-  const pizzaObjectStore = transaction.objectStore("new_pizza");
+  const transactionObjectStore = transaction.objectStore("pending_transaction");
 
-  pizzaObjectStore.add(record);
+  transactionObjectStore.add(record);
 }
 
-function uploadPizza() {
-  const transaction = db.transaction(["new_pizza"], "readwrite");
+function uploadTransaction() {
+  const transaction = db.transaction(["pending_transaction"], "readwrite");
 
-  const pizzaObjectStore = transaction.objectStore("new_pizza");
+  const transactionObjectStore = transaction.objectStore("pending_transaction");
 
-  const getAll = pizzaObjectStore.getAll();
+  const getAll = transactionObjectStore.getAll();
 }
 
 getAll.onsuccess = function () {
   if (getAll.result.length > 0) {
-    fetch("/api/pizzas", {
+    fetch("/api/transaction", {
       method: "POST",
       body: JSON.stringify(getAll.result),
       headers: {
@@ -49,11 +49,16 @@ getAll.onsuccess = function () {
         if (serverResponse.message) {
           throw new Error(serverResponse);
         }
-        const transaction = db.transaction(["new_pizza"], "readwrite");
-        const pizzaObjectStore = transaction.objectStore("new_pizza");
-        pizzaObjectStore.clear();
+        const transaction = db.transaction(
+          ["pending_transaction"],
+          "readwrite"
+        );
+        const transactionObjectStore = transaction.objectStore(
+          "pending_transaction"
+        );
+        transactionObjectStore.clear();
 
-        alert("All saved pizza has been submitted!");
+        alert("All saved pending transactions has been submitted!");
       })
       .catch((err) => {
         console.log(err);
@@ -61,4 +66,4 @@ getAll.onsuccess = function () {
   }
 };
 
-window.addEventListener("online", uploadPizza);
+window.addEventListener("online", uploadTransaction);
